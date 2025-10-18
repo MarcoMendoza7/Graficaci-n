@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovel</title>
+    <title>Sobel</title>
 </head>
 <body>
     <canvas id="canvas"></canvas>
-
     <canvas id="resultado"></canvas>
 
     <script type="text/javascript">
 
     var image = new Image();
     image.onload = imageLoaded;
-    image.src = "Marco.jpeg";
+    image.src = "Marco.jpeg"; // tu imagen
 
     function imageLoaded(){
         var canvas = document.getElementById('canvas');
@@ -28,44 +27,90 @@
         blancoYNegro(canvas);
 
         var resultado = document.getElementById("resultado")
-        convolucionar(canvas, resultado)
-
+        convolucionar(canvas, resultado);
     }
 
+    // Convierte la imagen a escala de grises
     function blancoYNegro(canvas){
         var ctx = canvas.getContext("2d");
         var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
         var pixeles = imgData.data;
 
-        console.log(imgData)
-
         for (var p=0; p < pixeles.length; p +=4){
             var rojo = pixeles[p];
-            var verde = pixeles[ p + 1];
-            var azul = pixeles [p + 2 ];
-            var alpha = pixeles[p + 3];
+            var verde = pixeles[p + 1];
+            var azul = pixeles[p + 2];
 
-            var gris = (rojo + verde + azul) / 3
-
-            // rojo: 50, verde: 120, azul:230
-            //gris = (50 + 120 + 230) / 3 = 400/3 = 133.33
+            var gris = (rojo + verde + azul) / 3;
 
             pixeles[p] = gris;
             pixeles[p + 1] = gris;
             pixeles[p + 2] = gris;
-
         }
 
         ctx.putImageData(imgData, 0, 0);
-        
     }
 
+    // Aplica el filtro de Sobel
     function convolucionar(canvasFuente, canvasDestino){
-        // obtener todas las variables necesarias
-        var ctxFuente =     
+        var ctxFuente = canvasFuente.getContext("2d");
+        var imgDataFuente = ctxFuente.getImageData(0, 0, canvasFuente.width, canvasFuente.height);
+        var pixelesFuente = imgDataFuente.data;
+
+        canvasDestino.width = canvasFuente.width;
+        canvasDestino.height = canvasFuente.height;
+
+        var ctxDestino = canvasDestino.getContext("2d");
+        var imgDataDestino = ctxDestino.createImageData(canvasDestino.width, canvasDestino.height);
+        var pixelesDestino = imgDataDestino.data;
+
+        // Kernels de Sobel
+        var sobelVertical = [
+            [-1, 0, 1],
+            [-2, 0, 2],
+            [-1, 0, 1]
+        ];
+
+        var sobelHorizontal = [
+            [-1, -2, -1],
+            [ 0,  0,  0],
+            [ 1,  2,  1]
+        ];
+
+        for(var y = 1; y < canvasFuente.height-1; y++){
+            for(var x = 1; x < canvasFuente.width-1; x++){
+                var pixelX = 0;
+                var pixelY = 0;
+
+                // Aplicar kernel
+                for(var ky = 0; ky < 3; ky++){
+                    for(var kx = 0; kx < 3; kx++){
+                        var px = ( (y + ky - 1) * canvasFuente.width + (x + kx - 1) ) * 4;
+                        var gris = pixelesFuente[px]; 
+
+                        pixelX += sobelHorizontal[ky][kx] * gris;
+                        pixelY += sobelVertical[ky][kx] * gris;
+                    }
+                }
+
+                var mag = Math.sqrt(pixelX*pixelX + pixelY*pixelY);
+                mag = mag > 255 ? 255 : mag; 
+
+                var idx = (y * canvasFuente.width + x) * 4;
+                pixelesDestino[idx] = mag;
+                pixelesDestino[idx+1] = mag;
+                pixelesDestino[idx+2] = mag;
+                pixelesDestino[idx+3] = 255;
+            }
+        }
+CV2/Marco.jpegCV2/Marco.jpeg
+        ctxDestino.putImageData(imgDataDestino, 0, 0);
+
+        // primero un valor fijo despues colocar una barra que diga las 4 transformaciones. ademas de crearla en api localmente. 
     }
 
     </script>
-
 </body>
 </html>
+
+
