@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinco Filtros</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .contenedor {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            justify-content: center;
+            align-items: start;
+        }
+        .filtro-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .filtro-box h2 {
+            font-size: 1.2em;
+            color: #444;
+            margin-bottom: 10px;
+        }
+        canvas {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Aplicación de 5 Filtros en Imagen</h1>
+
+    <div class="contenedor" id="contenedor-filtros"></div>
+
+    <script>
+    var image = new Image();
+    image.onload = function() {
+        aplicarFiltros(image);
+    };
+    image.src = "Marco.jpeg"; // ⚡ cambia la ruta si tu imagen está en otro lugar
+
+    // Crear un cuadro para cada filtro
+    function crearContenedorFiltro(nombre, image, filtroFuncion) {
+        var contenedor = document.getElementById("contenedor-filtros");
+
+        var box = document.createElement("div");
+        box.className = "filtro-box";
+
+        var titulo = document.createElement("h2");
+        titulo.textContent = nombre;
+
+        var canvas = document.createElement("canvas");
+        var ctx = canvas.getContext("2d");
+        canvas.width = image.width;
+        canvas.height = image.height;
+        ctx.drawImage(image, 0, 0);
+
+        filtroFuncion(canvas, canvas);
+
+        box.appendChild(titulo);
+        box.appendChild(canvas);
+        contenedor.appendChild(box);
+    }
+
+    // ---- FILTROS ----
+
+    // 1. Escala de grises
+    function filtroGrises(canvasFuente, canvasDestino){
+        var ctx = canvasDestino.getContext("2d");
+        var imgData = ctx.getImageData(0, 0, canvasFuente.width, canvasFuente.height);
+        var pixeles = imgData.data;
+
+        for (var i=0; i<pixeles.length; i+=4){
+            var gris = (pixeles[i] + pixeles[i+1] + pixeles[i+2]) / 3;
+            pixeles[i] = pixeles[i+1] = pixeles[i+2] = gris;
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+    }
+
+    // 2. Invertir colores
+    function filtroInversion(canvasFuente, canvasDestino){
+        var ctx = canvasDestino.getContext("2d");
+        var imgData = ctx.getImageData(0, 0, canvasFuente.width, canvasFuente.height);
+        var pixeles = imgData.data;
+
+        for (var i=0; i<pixeles.length; i+=4){
+            pixeles[i]   = 255 - pixeles[i];     // R
+            pixeles[i+1] = 255 - pixeles[i+1];   // G
+            pixeles[i+2] = 255 - pixeles[i+2];   // B
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+    }
+
+    // 3. Sepia
+    function filtroSepia(canvasFuente, canvasDestino){
+        var ctx = canvasDestino.getContext("2d");
+        var imgData = ctx.getImageData(0, 0, canvasFuente.width, canvasFuente.height);
+        var pixeles = imgData.data;
+
+        for (var i=0; i<pixeles.length; i+=4){
+            var r = pixeles[i], g = pixeles[i+1], b = pixeles[i+2];
+            pixeles[i]   = Math.min(0.393*r + 0.769*g + 0.189*b, 255);
+            pixeles[i+1] = Math.min(0.349*r + 0.686*g + 0.168*b, 255);
+            pixeles[i+2] = Math.min(0.272*r + 0.534*g + 0.131*b, 255);
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+    }
+
+    // 4. Brillo
+    function filtroBrillo(canvasFuente, canvasDestino){
+        var ctx = canvasDestino.getContext("2d");
+        var imgData = ctx.getImageData(0, 0, canvasFuente.width, canvasFuente.height);
+        var pixeles = imgData.data;
+
+        var incremento = 40; // valor positivo = más brillo
+        for (var i=0; i<pixeles.length; i+=4){
+            pixeles[i]   = Math.min(pixeles[i] + incremento, 255);
+            pixeles[i+1] = Math.min(pixeles[i+1] + incremento, 255);
+            pixeles[i+2] = Math.min(pixeles[i+2] + incremento, 255);
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+    }
+
+    // 5. Blur (desenfoque)
+    function filtroBlur(canvasFuente, canvasDestino){
+        var ctxFuente = canvasFuente.getContext("2d");
+        var imgDataFuente = ctxFuente.getImageData(0, 0, canvasFuente.width, canvasFuente.height);
+        var pixelesFuente = imgDataFuente.data;
+
+        var ctxDestino = canvasDestino.getContext("2d");
+        var imgDataDestino = ctxDestino.createImageData(canvasDestino.width, canvasDestino.height);
+        var pixelesDestino = imgDataDestino.data;
+
+        var kernel = [
+            [1/9, 1/9, 1/9],
+            [1/9, 1/9, 1/9],
+            [1/9, 1/9, 1/9]
+        ];
+
+        for (var y = 1; y < canvasFuente.height - 1; y++) {
+            for (var x = 1; x < canvasFuente.width - 1; x++) {
+                var sumR = 0, sumG = 0, sumB = 0;
+
+                for (var ky = 0; ky < 3; ky++) {
+                    for (var kx = 0; kx < 3; kx++) {
+                        var px = ((y + ky - 1) * canvasFuente.width + (x + kx - 1)) * 4;
+                        sumR += pixelesFuente[px] * kernel[ky][kx];
+                        sumG += pixelesFuente[px+1] * kernel[ky][kx];
+                        sumB += pixelesFuente[px+2] * kernel[ky][kx];
+                    }
+                }
+
+                var idx = (y * canvasFuente.width + x) * 4;
+                pixelesDestino[idx]   = sumR;
+                pixelesDestino[idx+1] = sumG;
+                pixelesDestino[idx+2] = sumB;
+                pixelesDestino[idx+3] = 255;
+            }
+        }
+
+        ctxDestino.putImageData(imgDataDestino, 0, 0);
+    }
+
+    // ---- Aplicar filtros ----
+    function aplicarFiltros(image){
+        crearContenedorFiltro("Imagen Original", image, function(){});
+        crearContenedorFiltro("Escala de Grises", image, filtroGrises);
+        crearContenedorFiltro("Inversión de Colores", image, filtroInversion);
+        crearContenedorFiltro("Sepia", image, filtroSepia);
+        crearContenedorFiltro("Brillo", image, filtroBrillo);
+        crearContenedorFiltro("Desenfoque (Blur)", image, filtroBlur);
+    }
+    </script>
+</body>
+</html>
